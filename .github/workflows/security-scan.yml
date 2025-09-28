@@ -43,7 +43,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload security reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-reports
         path: |
@@ -158,7 +158,7 @@ jobs:
         npx license-checker
 
     - name: Upload license reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: license-reports
         path: |
@@ -194,7 +194,7 @@ jobs:
         echo "4. Review license compliance issues" >> security-summary.md
 
     - name: Upload security summary
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-summary
         path: security-summary.md

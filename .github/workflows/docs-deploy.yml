@@ -44,7 +44,7 @@ jobs:
         make html
 
     - name: Upload documentation artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: documentation
         path: docs/_build/html/
@@ -105,7 +105,7 @@ jobs:
         pydoc-markdown -p elodie --render-toc > docs/api/elodie.md
 
     - name: Upload API documentation
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: api-documentation
         path: docs/api/
