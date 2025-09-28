@@ -22,7 +22,12 @@ jobs:
       with:
         python-version: '3.9'
 
-    - name: Install dependencies\n      run: |\n        python -m pip install --upgrade pip\n        pip install -r requirements.txt\n        pip install -r elodie/plugins/googlephotos/requirements.txt\n        pip install safety
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r elodie/plugins/googlephotos/requirements.txt
+        pip install safety
 
     - name: Run Python security scan with Safety
       run: |

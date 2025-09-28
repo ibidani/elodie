@@ -10,6 +10,11 @@ on:
         description: 'Release version (e.g., v1.2.3)'
         required: true
         type: string
+      publish_to_pypi:
+        description: 'Publish to PyPI (default: false)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   create-release:
@@ -100,12 +105,17 @@ jobs:
         # Publish to GitHub Packages
         twine upload --repository-url https://upload.pypi.org/legacy/ dist/* --verbose
 
-    - name: Publish to PyPI (Stable Releases Only)
-      if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'alpha') && !contains(github.ref, 'beta') && !contains(github.ref, 'rc') && secrets.PYPI_API_TOKEN != null
+    - name: Publish to PyPI (Optional - Manual Enable Required)
+      if: |
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_to_pypi == 'true') ||
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && 
+         !contains(github.ref, 'alpha') && !contains(github.ref, 'beta') && 
+         !contains(github.ref, 'rc') && vars.ENABLE_PYPI_PUBLISHING == 'true')
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: |
+        echo "PyPI publishing is enabled for this release"
         twine upload dist/* --verbose
 
   build-electron:
@@ -165,20 +175,11 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Login to Docker Hub (Optional)
-      if: secrets.DOCKER_HUB_TOKEN != null
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v4
       with:
-        images: |
-          ghcr.io/${{ github.repository }}
-          ${{ secrets.DOCKER_HUB_USERNAME != null && secrets.DOCKER_HUB_USERNAME || '' }}/elodie
+        images: ghcr.io/${{ github.repository }}
         tags: |
           type=ref,event=tag
           type=semver,pattern={{version}}
@@ -189,6 +190,7 @@ jobs:
           org.opencontainers.image.description=Your Personal EXIF-based Photo, Video and Audio Assistant
           org.opencontainers.image.vendor=Jaisen Mathai
           org.opencontainers.image.licenses=ISC
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
