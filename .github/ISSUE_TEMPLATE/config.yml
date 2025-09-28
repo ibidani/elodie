@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/jmathai/elodie/blob/master/Readme.md
+    about: Check the documentation for usage instructions and troubleshooting
+  - name: Discussions
+    url: https://github.com/jmathai/elodie/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: Security Vulnerabilities
+    url: https://github.com/jmathai/elodie/security/advisories/new
+    about: Report security vulnerabilities privately

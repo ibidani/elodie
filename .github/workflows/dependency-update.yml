@@ -1,0 +1,153 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update-python-deps:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install pip-tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install pip-tools
+
+    - name: Update Python dependencies
+      run: |
+        pip-compile --upgrade requirements.txt
+        pip-compile --upgrade docs/requirements.txt
+        pip-compile --upgrade elodie/tests/requirements.txt
+
+    - name: Check for security vulnerabilities
+      run: |
+        pip install safety
+        safety check --json --output safety-report.json || true
+
+    - name: Create Pull Request for Python updates
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update Python dependencies'
+        title: 'Automated Python dependency updates'
+        body: |
+          ## Python Dependency Updates
+          
+          This PR contains automated updates to Python dependencies.
+          
+          ### Changes
+          - Updated requirements.txt
+          - Updated docs/requirements.txt  
+          - Updated elodie/tests/requirements.txt
+          
+          ### Security Report
+          See attached safety report for any security vulnerabilities.
+          
+          Please review the changes and test thoroughly before merging.
+        branch: dependency-updates/python
+        delete-branch: true
+
+  update-node-deps:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Update Node.js dependencies
+      run: |
+        npm update
+        npm audit fix --force || true
+
+    - name: Check for security vulnerabilities
+      run: |
+        npm audit --json > npm-audit-report.json || true
+
+    - name: Create Pull Request for Node updates
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update Node.js dependencies'
+        title: 'Automated Node.js dependency updates'
+        body: |
+          ## Node.js Dependency Updates
+          
+          This PR contains automated updates to Node.js dependencies.
+          
+          ### Changes
+          - Updated package.json dependencies
+          - Applied security fixes
+          
+          ### Security Report
+          See attached npm audit report for any security vulnerabilities.
+          
+          Please review the changes and test thoroughly before merging.
+        branch: dependency-updates/nodejs
+        delete-branch: true
+
+  check-outdated:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Check outdated Python packages
+      run: |
+        pip install pip-check
+        pip-check || true
+
+    - name: Check outdated Node packages
+      run: |
+        npm outdated || true
+
+    - name: Create issue for manual review
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const title = 'Weekly Dependency Review - ' + new Date().toISOString().split('T')[0];
+          const body = `## Weekly Dependency Review
+          
+          This is an automated weekly check for outdated dependencies.
+          
+          ### Action Required
+          - [ ] Review Python dependency updates
+          - [ ] Review Node.js dependency updates  
+          - [ ] Check for breaking changes
+          - [ ] Test critical functionality
+          - [ ] Approve and merge dependency update PRs
+          
+          ### Next Steps
+          1. Check the dependency update PRs created today
+          2. Review changelogs for major version updates
+          3. Run local tests before merging
+          4. Close this issue once review is complete
+          `;
+          
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: title,
+            body: body,
+            labels: ['dependencies', 'maintenance']
+          });

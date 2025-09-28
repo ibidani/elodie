@@ -1,37 +1,62 @@
-FROM debian:jessie
+FROM python:3.9-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
-RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends ca-certificates libimage-exiftool-perl python2.7 python-pip python-pyexiv2 wget make && \
-    pip install --upgrade pip setuptools && \
+# Install system dependencies and specific ExifTool version
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        locales \
+        wget \
+        perl \
+        make && \
+    # Install specific ExifTool version (matching CircleCI)\
+    wget https://jmathai.s3.us-east-1.amazonaws.com/github/elodie/Image-ExifTool-13.19.tar.gz && \
+    gzip -dc Image-ExifTool-13.19.tar.gz | tar -xf - && \
+    cd Image-ExifTool-13.19 && \
+    perl Makefile.PL && \
+    make install && \
+    cd .. && \
+    rm -rf Image-ExifTool-13.19* && \
+    locale-gen en_US.UTF-8 && \
+    dpkg-reconfigure locales && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update -qq && \
-    apt-get install -y locales -qq && \
-    locale-gen en_US.UTF-8 en_us && \
-    dpkg-reconfigure locales && \
-    locale-gen C.UTF-8 && \
-    /usr/sbin/update-locale LANG=C.UTF-8
+ENV LANG=C.UTF-8
+ENV LANGUAGE=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
-ENV LANG C.UTF-8
-ENV LANGUAGE C.UTF-8
-ENV LC_ALL C.UTF-8
-
-RUN wget http://www.sno.phy.queensu.ca/~phil/exiftool/Image-ExifTool-10.20.tar.gz && \
-    gzip -dc Image-ExifTool-10.20.tar.gz  | tar -xf - && \
-    cd Image-ExifTool-10.20 && perl Makefile.PL && \
-    make install && cd ../ && rm -r Image-ExifTool-10.20
-
-COPY requirements.txt /opt/elodie/requirements.txt
-COPY docs/requirements.txt /opt/elodie/docs/requirements.txt
-COPY elodie/tests/requirements.txt /opt/elodie/elodie/tests/requirements.txt
+# Create app directory
 WORKDIR /opt/elodie
-RUN pip install -r docs/requirements.txt && \
-    pip install -r elodie/tests/requirements.txt && \
-    rm -rf /root/.cache/pip
 
-COPY . /opt/elodie
+# Copy requirements files first for better caching
+COPY requirements.txt ./
+COPY docs/requirements.txt ./docs/
+COPY elodie/tests/requirements.txt ./elodie/tests/
+COPY elodie/plugins/googlephotos/requirements.txt ./elodie/plugins/googlephotos/
 
-CMD ["/bin/bash"]
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r docs/requirements.txt && \
+    pip install --no-cache-dir -r elodie/tests/requirements.txt && \
+    pip install --no-cache-dir -r elodie/plugins/googlephotos/requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN useradd -m -u 1000 elodie && \
+    chown -R elodie:elodie /opt/elodie
+
+USER elodie
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python elodie.py --help || exit 1
+
+ENTRYPOINT ["python", "elodie.py"]
+CMD ["--help"]

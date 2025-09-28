@@ -1,0 +1,21 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^http://localhost"
+    },
+    {
+      "pattern": "^https://127.0.0.1"
+    }
+  ],
+  "replacementPatterns": [
+    {
+      "pattern": "^/",
+      "replacement": "https://github.com/jmathai/elodie/blob/master/"
+    }
+  ],
+  "httpStatusCodesToIgnore": [429, 503],
+  "timeout": "10s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackHttpStatusCodes": [400, 401, 403, 404, 500, 502, 503, 504]
+}

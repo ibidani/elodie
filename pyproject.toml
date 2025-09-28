@@ -1,0 +1,128 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools-scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "elodie"
+dynamic = ["version"]
+description = "Your Personal EXIF-based Photo, Video and Audio Assistant"
+readme = "Readme.md"
+requires-python = ">=3.6"
+license = {text = "ISC"}
+authors = [
+    {name = "Jaisen Mathai", email = "jaisen@jmathai.com"}
+]
+maintainers = [
+    {name = "Jaisen Mathai", email = "jaisen@jmathai.com"}
+]
+keywords = ["exif", "photo", "video", "audio", "organization", "metadata"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: ISC License (ISCL)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: System :: Archiving",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "click>=6.6",
+    "requests>=2.20.0",
+    "Send2Trash>=1.3.0",
+    "future>=0.16.0",
+    "configparser>=3.5.0",
+    "tabulate>=0.7.7",
+    "Pillow>=6.2.2; python_version == '2.7'",
+    "Pillow>=9.3; python_version >= '3.6'",
+    "six>=1.9",
+]
+
+[project.urls]
+Homepage = "https://github.com/jmathai/elodie"
+Documentation = "https://github.com/jmathai/elodie/blob/master/Readme.md"
+Repository = "https://github.com/jmathai/elodie.git"
+"Bug Tracker" = "https://github.com/jmathai/elodie/issues"
+"GitHub Packages" = "https://github.com/users/jmathai/packages"
+"Container Registry" = "https://github.com/jmathai/elodie/pkgs/container/elodie"
+
+[project.scripts]
+elodie = "elodie:main"
+
+[project.optional-dependencies]
+dev = [
+    "nose",
+    "coverage",
+    "flake8",
+    "black",
+    "isort",
+    "bandit",
+    "safety",
+]
+docs = [
+    "sphinx",
+    "sphinx-rtd-theme",
+    "pydoc-markdown",
+]
+test = [
+    "nose",
+    "coverage",
+]
+
+[tool.setuptools]
+packages = ["elodie"]
+
+[tool.setuptools_scm]
+write_to = "elodie/_version.py"
+
+[tool.black]
+line-length = 88
+target-version = ['py36', 'py37', 'py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["elodie"]
+
+[tool.coverage.run]
+source = ["elodie"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+]

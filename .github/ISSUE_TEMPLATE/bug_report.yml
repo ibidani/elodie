@@ -1,0 +1,99 @@
+name: Bug Report
+description: Create a report to help us improve Elodie
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please provide as much detail as possible.
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Tell us what happened!
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Run command '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: A clear and concise description of what actually happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please provide information about your environment
+      value: |
+        - OS: [e.g. Ubuntu 20.04, macOS 12.0, Windows 10]
+        - Python Version: [e.g. 3.9.7]
+        - ExifTool Version: [e.g. 12.30]
+        - Elodie Version: [e.g. 1.0.0]
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample-files
+    attributes:
+      label: Sample Files
+      description: If applicable, describe the type of media files that trigger the bug
+      placeholder: |
+        - File type: [e.g. JPEG, MP4, HEIC]
+        - File size: [e.g. 5MB]
+        - Camera/device: [e.g. iPhone 13, Canon EOS R]
+
+  - type: textarea
+    id: error-logs
+    attributes:
+      label: Error Logs
+      description: If applicable, add any error messages or logs
+      render: shell
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: By submitting this issue, you agree to the following
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: I have provided all required information
+          required: true
+        - label: I am willing to help test a fix if needed
+          required: false

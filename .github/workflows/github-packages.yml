@@ -1,0 +1,178 @@
+name: GitHub Packages
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  publish-python-package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+
+    - name: Build Python package
+      run: |
+        python -m build
+
+    - name: Configure package for GitHub Packages
+      run: |
+        # Update package name for GitHub Packages compatibility
+        sed -i 's/name="elodie"/name="elodie-jmathai"/' setup.py
+
+    - name: Rebuild with updated name
+      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      run: |
+        rm -rf dist/
+        python -m build
+
+    - name: Publish to GitHub Packages
+      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Configure repository URL for GitHub Packages
+        twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-packages
+        path: dist/
+
+  publish-container:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to GitHub Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=ref,event=tag
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+        labels: |
+          org.opencontainers.image.title=Elodie
+          org.opencontainers.image.description=Your Personal EXIF-based Photo, Video and Audio Assistant
+          org.opencontainers.image.vendor=Jaisen Mathai
+          org.opencontainers.image.licenses=ISC
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/master/Readme.md
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        load: true
+        tags: test-image
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Test Docker image
+      run: |
+        docker run --rm test-image python --version
+        docker run --rm test-image exiftool -ver
+        docker run --rm test-image python elodie.py --help
+
+    - name: Run security scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: test-image
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Build and push to GitHub Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  create-package-summary:
+    needs: [publish-python-package, publish-container]
+    runs-on: ubuntu-latest
+    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    steps:
+    - name: Create package summary
+      run: |
+        echo "# 📦 GitHub Packages Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Published Packages" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.publish-python-package.result }}" = "success" ]; then
+          echo "✅ **Python Package**: Published to GitHub Packages" >> $GITHUB_STEP_SUMMARY
+          echo "   - Install: \`pip install elodie-jmathai --index-url https://pypi.org/simple/\`" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Python Package**: Failed to publish" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.publish-container.result }}" = "success" ]; then
+          echo "✅ **Container Image**: Published to GitHub Container Registry" >> $GITHUB_STEP_SUMMARY
+          echo "   - Pull: \`docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "   - Run: \`docker run --rm -it ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Container Image**: Failed to publish" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Package Information" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Repository**: \`${{ github.repository }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch/Tag**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Registry**: [GitHub Container Registry](https://github.com/users/${{ github.repository_owner }}/packages)" >> $GITHUB_STEP_SUMMARY
