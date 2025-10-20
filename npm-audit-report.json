@@ -1,0 +1,38 @@
+{
+  "message": "503 Service Unavailable - POST https://registry.npmjs.org/-/npm/v1/security/audits/quick - Service Unavailable",
+  "method": "POST",
+  "uri": "https://registry.npmjs.org/-/npm/v1/security/audits/quick",
+  "headers": {
+    "date": [
+      "Mon, 20 Oct 2025 09:56:42 GMT"
+    ],
+    "content-type": [
+      "application/json"
+    ],
+    "content-length": [
+      "31"
+    ],
+    "connection": [
+      "keep-alive"
+    ],
+    "cf-ray": [
+      "9917a2a4e8b6acab-ORD"
+    ],
+    "vary": [
+      "Accept-Encoding"
+    ],
+    "set-cookie": [
+      "_cfuvid=I59J_c9PH1IeC3jaDRRJ804GIBmSfop8eGRzWlfa1GA-1760954202078-0.0.1.1-604800000; path=/; domain=.npmjs.org; HttpOnly; Secure; SameSite=None"
+    ],
+    "server": [
+      "cloudflare"
+    ],
+    "x-fetch-attempts": [
+      "1"
+    ]
+  },
+  "statusCode": 503,
+  "body": {
+    "error": "Service Unavailable"
+  }
+}
